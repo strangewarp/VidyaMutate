@@ -8,8 +8,10 @@ function FileModder:initialize(sel, atoms)
 	-- 3. Total bytes in file, from [route buflength]
 	-- 4. Glitch type
 	-- 5. Glitch point
-	-- 6. Active filename
-	self.inlets = 6
+	-- 6. Number of times to glitch a file
+	-- 7. Toggle for a randomized number of glitches within the bounds of (6)
+	-- 8. Active filename
+	self.inlets = 8
 	
 	-- 1. To [binfile] inlet - bang(get next byte), clear(clear the buffer), FLOAT(write a byte to buffer), write(write to file)
 	self.outlets = 1
@@ -25,6 +27,12 @@ function FileModder:initialize(sel, atoms)
 	
 	-- Minimum glitch point in image data
 	self.glitchpoint = 500
+	
+	-- Number of times to repeat random glitches on a given file
+	self.randrepeat = 1
+	
+	-- Toggles whether the number of repeating glitches should be random, within the bounds of 1 to self.randrepeat
+	self.randtoggle = "concrete"
 	
 	-- Hold all bytes, which are converted to ints in the 0-255 range
 	self.bytebuffer = {}
@@ -59,7 +67,14 @@ function FileModder:in_1_bang()
 		
 	elseif self.glitchtype == "random" then
 	
-		for i = 1, 20 do
+		local randlimit = 0
+		if self.randtoggle == "random" then
+			randlimit = math.random(1, self.randrepeat)
+		else
+			randlimit = self.randrepeat
+		end
+		
+		for i = 1, randlimit do
 			self.bytebuffer[math.random(self.glitchpoint, self.buflength)] = math.random(1, 244)
 		end
 		
@@ -109,6 +124,14 @@ function FileModder:in_5_float(f)
 	self.glitchpoint = f
 end
 
-function FileModder:in_6_list(d)
+function FileModder:in_6_float(f)
+	self.randrepeat = f
+end
+
+function FileModder:in_7_list(d)
+	self.randtoggle = d[1]
+end
+
+function FileModder:in_8_list(d)
 	self.filedata = {d[1], d[2]}
 end
